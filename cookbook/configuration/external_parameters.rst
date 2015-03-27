@@ -25,26 +25,56 @@ applied to the resulting parameter name:
 For example, if you're using Apache, environment variables can be set using
 the following ``VirtualHost`` configuration:
 
-.. code-block:: apache
+.. configuration-block::
 
-    <VirtualHost *:80>
-        ServerName      Symfony
-        DocumentRoot    "/path/to/symfony_2_app/web"
-        DirectoryIndex  index.php index.html
-        SetEnv          SYMFONY__DATABASE__USER user
-        SetEnv          SYMFONY__DATABASE__PASSWORD secret
+    .. code-block:: apache
 
-        <Directory "/path/to/symfony_2_app/web">
-            AllowOverride All
-            Allow from All
-        </Directory>
-    </VirtualHost>
+        <VirtualHost *:80>
+            ServerName      Symfony
+            DocumentRoot    "/path/to/symfony_2_app/web"
+            DirectoryIndex  index.php index.html
+            SetEnv          SYMFONY__DATABASE__USER user
+            SetEnv          SYMFONY__DATABASE__PASSWORD secret
+
+            <Directory "/path/to/symfony_2_app/web">
+                AllowOverride All
+                Allow from All
+            </Directory>
+        </VirtualHost>
+        
+    .. code-block:: nginx
+    
+        server {
+            listen 80   default;
+            server_name domain.tld;
+            
+            root /patth/to/symfony_2_app/web;
+            
+            # Option 1 - set an envrionment variable using set
+            set $SYMFONY__DATABASE_USER user;
+            set $SYMFONY__DATABASE_PASSWORD secret;
+            
+            # Put your location blocks here
+            
+            location ~* \.php {
+                # fascgi_index  index.php;
+                fastgci_pass    unix:/path/to/php5-fpm.sock;
+                include         fastcgi_params;
+                fastcgi_param   SCRIPT_FILENAME $document_root$fastcgi_script_name;
+                
+                # Option 2 - set and environment variable as a fastcgi_param
+                fastcgi_param   SYMFONY__DATABASE_USER 'user';
+                fastcgi_param   SYMFONY__DATABASE_PASSWORD 'secret';
+            }
+            
+            # More location blocks, etc.
+        }
 
 .. note::
 
-    The example above is for an Apache configuration, using the `SetEnv`_
-    directive. However, this will work for any web server which supports
-    the setting of environment variables.
+    The example above are for an Apache or NGINX configuration. However, 
+    a similar strategy will work for any web server which supports the 
+    setting of environment variables.
 
     Also, in order for your console to work (which does not use Apache),
     you must export these as shell variables. On a Unix system, you can run
